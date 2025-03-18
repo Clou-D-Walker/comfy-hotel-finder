@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -47,7 +46,10 @@ const BookingForm = ({ hotel, room, roomNumber, checkIn, checkOut, onClose }: Bo
   }, [dateRange, room.price]);
 
   const handleDateSelect = (range: { from?: Date; to?: Date }) => {
-    setDateRange(range);
+    setDateRange({
+      from: range.from,
+      to: range.to
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

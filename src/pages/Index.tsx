@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hotelAPI } from '@/services/api';
@@ -262,8 +261,7 @@ const Index = () => {
                   key={hotel._id} 
                   hotel={hotel} 
                   featured={true} 
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  className={`animate-fade-in-up`}
                 />
               ))}
             </div>

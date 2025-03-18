@@ -45,7 +45,10 @@ const SearchForm = ({ className, minimal = false }: SearchFormProps) => {
   };
 
   const handleDateSelect = (range: { from?: Date; to?: Date }) => {
-    setDateRange(range);
+    setDateRange({
+      from: range.from,
+      to: range.to
+    });
     setSearchCriteria({
       ...searchCriteria,
       checkIn: range.from || null,
