@@ -1,7 +1,7 @@
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { User, AuthState } from '@/types';
-import { authAPI } from '@/services/api';
+import { authAPI, checkBackendConnection } from '@/services/api';
 import { toast } from 'sonner';
 
 // Define action types
@@ -13,19 +13,21 @@ type AuthAction =
   | { type: 'REGISTER_START' }
   | { type: 'REGISTER_SUCCESS'; payload: User }
   | { type: 'REGISTER_FAILURE'; payload: string }
-  | { type: 'UPDATE_USER'; payload: User };
+  | { type: 'UPDATE_USER'; payload: User }
+  | { type: 'BACKEND_STATUS'; payload: boolean };
 
 // Initial state
-const initialState: AuthState = {
+const initialState: AuthState & { backendAvailable: boolean | null } = {
   user: null,
   loading: false,
   error: null,
   isAuthenticated: false,
+  backendAvailable: null,
 };
 
 // Create context
 const AuthContext = createContext<{
-  state: AuthState;
+  state: typeof initialState;
   dispatch: React.Dispatch<AuthAction>;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: Partial<User>) => Promise<void>;
@@ -39,7 +41,7 @@ const AuthContext = createContext<{
 });
 
 // Reducer function
-const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+const authReducer = (state: typeof initialState, action: AuthAction): typeof initialState => {
   switch (action.type) {
     case 'LOGIN_START':
     case 'REGISTER_START':
@@ -76,6 +78,11 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         ...state,
         user: action.payload,
       };
+    case 'BACKEND_STATUS':
+      return {
+        ...state,
+        backendAvailable: action.payload,
+      };
     default:
       return state;
   }
@@ -84,6 +91,27 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+
+  // Check backend connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      const isConnected = await checkBackendConnection();
+      dispatch({ type: 'BACKEND_STATUS', payload: isConnected });
+      
+      if (!isConnected) {
+        toast.error(
+          'Cannot connect to the backend server. Please ensure it is running at http://localhost:8000',
+          { duration: 6000 }
+        );
+      }
+    };
+    
+    checkConnection();
+    // Check connection periodically
+    const intervalId = setInterval(checkConnection, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Check if user is logged in when the app loads
   useEffect(() => {
@@ -95,20 +123,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dispatch({ type: 'LOGIN_START' });
         const user = await authAPI.getCurrentUser();
         dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-      } catch (error) {
+      } catch (error: any) {
         localStorage.removeItem('token');
         dispatch({ 
           type: 'LOGIN_FAILURE', 
-          payload: 'Session expired. Please log in again.' 
+          payload: error.message || 'Session expired. Please log in again.' 
         });
       }
     };
 
-    verifyUser();
-  }, []);
+    if (state.backendAvailable) {
+      verifyUser();
+    }
+  }, [state.backendAvailable]);
 
   // Login function
   const login = async (email: string, password: string) => {
+    if (!state.backendAvailable) {
+      toast.error('Cannot connect to the backend server. Please ensure it is running.');
+      return;
+    }
+    
     dispatch({ type: 'LOGIN_START' });
     try {
       const data = await authAPI.login(email, password);
@@ -117,14 +152,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       dispatch({ 
         type: 'LOGIN_FAILURE', 
-        payload: error.response?.data?.message || 'Failed to login' 
+        payload: error.message || 'Failed to login' 
       });
-      toast.error(error.response?.data?.message || 'Failed to login');
+      toast.error(error.message || 'Failed to login');
     }
   };
 
   // Register function
   const register = async (userData: Partial<User>) => {
+    if (!state.backendAvailable) {
+      toast.error('Cannot connect to the backend server. Please ensure it is running at http://localhost:8000');
+      return;
+    }
+    
     dispatch({ type: 'REGISTER_START' });
     try {
       const data = await authAPI.register(userData);
@@ -133,9 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       dispatch({ 
         type: 'REGISTER_FAILURE', 
-        payload: error.response?.data?.message || 'Failed to register' 
+        payload: error.message || 'Failed to register' 
       });
-      toast.error(error.response?.data?.message || 'Failed to register');
+      toast.error(error.message || 'Failed to register');
     }
   };
 
