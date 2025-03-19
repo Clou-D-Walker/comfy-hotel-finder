@@ -1,135 +1,62 @@
 
-// This file exports the JSDoc type definitions for the app
-
 /**
+ * Hotel object type
  * @typedef {Object} Hotel
- * @property {string} [_id]
- * @property {string} name
- * @property {string} type
- * @property {string} city
- * @property {string} address
- * @property {string} distance
- * @property {string[]} photos
- * @property {string} title
- * @property {string} desc
- * @property {number} rating
- * @property {string[]} rooms
- * @property {number} cheapestPrice
- * @property {boolean} featured
+ * @property {string} _id - Hotel unique identifier
+ * @property {string} name - Hotel name
+ * @property {string} description - Hotel description
+ * @property {string} city - City where the hotel is located
+ * @property {string} address - Hotel address
+ * @property {string} distance - Distance from city center
+ * @property {Array<string>} photos - Array of photo URLs
+ * @property {number} rating - Hotel rating (0-5)
+ * @property {number} price - Base price per night
+ * @property {boolean} featured - Whether hotel is featured
  */
 
 /**
- * @typedef {Object} RoomNumber
- * @property {number} number
- * @property {Date[]} unavailableDates
- */
-
-/**
+ * Room object type
  * @typedef {Object} Room
- * @property {string} [_id]
- * @property {string} title
- * @property {number} price
- * @property {number} maxPeople
- * @property {string} desc
- * @property {RoomNumber[]} roomNumbers
- * @property {boolean} isCleaned
- * @property {boolean} isAssigned
- * @property {string|null} bookedBy
- * @property {string} [hotelId]
- * @property {Hotel} [hotel]
- * @property {Date} [createdAt]
- * @property {Date} [updatedAt]
+ * @property {string} _id - Room unique identifier
+ * @property {string} name - Room type name
+ * @property {string} description - Room description
+ * @property {number} maxPeople - Maximum number of people
+ * @property {number} price - Room price per night
+ * @property {Array<string>} amenities - List of amenities
+ * @property {Array<string>} photos - Array of photo URLs
+ * @property {boolean} available - Whether room is available
+ * @property {string} hotelId - ID of the hotel this room belongs to
  */
 
 /**
- * @typedef {Object} User
- * @property {string} [_id]
- * @property {string} username
- * @property {string} email
- * @property {string} country
- * @property {string} [img]
- * @property {string} city
- * @property {string} [phone]
- * @property {string} [password]
- * @property {boolean} isAdmin
- * @property {boolean} isModerator
- * @property {Date} [createdAt]
- * @property {Date} [updatedAt]
- */
-
-/**
- * @typedef {Object} Moderator
- * @property {string} [_id]
- * @property {string} userId
- * @property {string} hotelId
- * @property {boolean} isActive
- * @property {Object} permissions
- * @property {boolean} permissions.canManageWorkers
- * @property {boolean} permissions.canManageRooms
- * @property {boolean} permissions.canViewBookings
- * @property {string[]} [assignedHotels]
- * @property {User} [user]
- * @property {Hotel} [hotel]
- * @property {Date} [createdAt]
- * @property {Date} [updatedAt]
- */
-
-/**
- * @typedef {Object} Worker
- * @property {string} [_id]
- * @property {string} name
- * @property {string} userId
- * @property {string} hotelId
- * @property {string} role
- * @property {string} email
- * @property {string} [phone]
- * @property {boolean} isActive
- * @property {Object[]} assignedRooms
- * @property {string} assignedRooms[].roomId
- * @property {User} [user]
- * @property {Hotel} [hotel]
- * @property {Date} [createdAt]
- * @property {Date} [updatedAt]
- */
-
-/**
+ * Booking object type
  * @typedef {Object} Booking
- * @property {string} [_id]
- * @property {string} userId
- * @property {string} hotelId
- * @property {string} roomId
- * @property {number} roomNumber
- * @property {Date} dateStart
- * @property {Date} dateEnd
- * @property {number} totalPrice
- * @property {'active'|'cancelled'|'completed'|'confirmed'} status
- * @property {Date} [createdAt]
- * @property {Date} [updatedAt]
- * @property {Object} [receipt]
- * @property {Date} receipt.issueDate
- * @property {string} receipt.receiptNumber
- * @property {Hotel} [hotel]
- * @property {Room} [room]
- * @property {User} [user]
+ * @property {string} _id - Booking unique identifier
+ * @property {Object} hotel - Hotel object or reference
+ * @property {Object} room - Room object or reference
+ * @property {Date} dateStart - Check-in date
+ * @property {Date} dateEnd - Check-out date
+ * @property {number} price - Total booking price
+ * @property {string} status - Booking status (confirmed, pending, cancelled)
  */
 
 /**
- * @typedef {Object} AuthState
- * @property {User|null} user
- * @property {boolean} loading
- * @property {string|null} error
- * @property {boolean} isAuthenticated
+ * User object type
+ * @typedef {Object} User
+ * @property {string} _id - User unique identifier
+ * @property {string} username - Username
+ * @property {string} email - User email
+ * @property {string} country - User country
+ * @property {string} city - User city
+ * @property {string} phone - User phone number
+ * @property {boolean} isAdmin - Whether user is an admin
+ * @property {boolean} isModerator - Whether user is a moderator
+ * @property {boolean} isWorker - Whether user is a worker
  */
 
-/**
- * @typedef {Object} SearchCriteria
- * @property {string} city
- * @property {Date|null} checkIn
- * @property {Date|null} checkOut
- * @property {number} guests
- * @property {[number, number]} [priceRange]
- */
-
-// Export the types through a dummy function
-// JSDoc types are compiled away in production, so we just need this for development
-export const dummyExportForTypes = () => {};
+// Export empty objects to allow importing these types
+// The actual type checking happens at runtime
+export const Hotel = {};
+export const Room = {};
+export const Booking = {};
+export const User = {};
