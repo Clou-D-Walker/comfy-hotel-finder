@@ -3,17 +3,17 @@ const mongoose = require('mongoose');
 
 const BookingSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
   hotelId: {
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Hotel',
     required: true
   },
   roomId: {
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Room',
     required: true
   },
@@ -35,11 +35,35 @@ const BookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['confirmed', 'cancelled', 'completed'],
-    default: 'confirmed'
+    enum: ['active', 'cancelled', 'completed', 'confirmed'],
+    default: 'active'
+  },
+  guestCount: {
+    type: Number,
+    required: true,
+    default: 1
+  },
+  receipt: {
+    issueDate: {
+      type: Date,
+      default: Date.now
+    },
+    receiptNumber: {
+      type: String
+    }
   }
 }, {
   timestamps: true
+});
+
+// Generate a receipt number when a booking is created
+BookingSchema.pre('save', function(next) {
+  if (this.isNew) {
+    const timestamp = new Date().getTime();
+    const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    this.receipt.receiptNumber = `INV-${timestamp}-${randomPart}`;
+  }
+  next();
 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

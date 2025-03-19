@@ -2,6 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Admin = require('../models/Admin');
+const Moderator = require('../models/Moderator');
+const Worker = require('../models/Worker');
 const { protect } = require('../middleware/auth');
 
 // @route   POST /api/auth/register
@@ -85,16 +88,36 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Check if user is an admin
+    const admin = await Admin.findOne({ userId: user._id });
+    
+    // Check if user is a moderator
+    const moderator = await Moderator.findOne({ userId: user._id });
+    
+    // Check if user is a worker
+    const worker = await Worker.findOne({ userId: user._id });
+    
+    // Create user object to send back (without password)
+    const userObject = user.toObject();
+    delete userObject.password;
+    
+    // Add role information
+    userObject.isAdmin = !!admin;
+    userObject.isModerator = !!moderator;
+    userObject.isWorker = !!worker;
+    
+    // Add details if applicable
+    if (admin) userObject.adminDetails = admin;
+    if (moderator) userObject.moderatorDetails = moderator;
+    if (worker) userObject.workerDetails = worker;
+
     // Create token
     const token = user.getSignedJwtToken();
-
-    // Don't send the password back
-    user.password = undefined;
 
     res.status(200).json({
       success: true,
       token,
-      user
+      user: userObject
     });
   } catch (err) {
     res.status(400).json({
@@ -110,8 +133,30 @@ router.post('/login', async (req, res) => {
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    
+    // Check if user is an admin
+    const admin = await Admin.findOne({ userId: user._id });
+    
+    // Check if user is a moderator
+    const moderator = await Moderator.findOne({ userId: user._id });
+    
+    // Check if user is a worker
+    const worker = await Worker.findOne({ userId: user._id });
+    
+    // Create user object to send back
+    const userObject = user.toObject();
+    
+    // Add role information
+    userObject.isAdmin = !!admin;
+    userObject.isModerator = !!moderator;
+    userObject.isWorker = !!worker;
+    
+    // Add details if applicable
+    if (admin) userObject.adminDetails = admin;
+    if (moderator) userObject.moderatorDetails = moderator;
+    if (worker) userObject.workerDetails = worker;
 
-    res.status(200).json(user);
+    res.status(200).json(userObject);
   } catch (err) {
     res.status(400).json({
       success: false,

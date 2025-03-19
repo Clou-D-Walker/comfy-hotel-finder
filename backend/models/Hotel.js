@@ -42,9 +42,6 @@ const HotelSchema = new mongoose.Schema({
     max: [5, 'Rating must can not be more than 5'],
     default: 0
   },
-  rooms: {
-    type: [String]
-  },
   cheapestPrice: {
     type: Number,
     required: [true, 'Please add a price']
@@ -54,7 +51,17 @@ const HotelSchema = new mongoose.Schema({
     default: false
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual populate for rooms
+HotelSchema.virtual('rooms', {
+  ref: 'Room',
+  localField: '_id',
+  foreignField: 'hotelId',
+  justOne: false
 });
 
 module.exports = mongoose.model('Hotel', HotelSchema);

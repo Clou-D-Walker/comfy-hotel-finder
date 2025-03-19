@@ -1,167 +1,194 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon, MapPin, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
+import { Search, CalendarIcon, Users, DollarSign } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
-import { SearchCriteria } from '@/types';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
-interface SearchFormProps {
+export interface SearchFormProps {
+  onSearch?: (searchCriteria: any) => void;
   className?: string;
-  minimal?: boolean;
 }
 
-const SearchForm = ({ className, minimal = false }: SearchFormProps) => {
+const SearchForm = ({ onSearch, className }: SearchFormProps) => {
   const navigate = useNavigate();
-  const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>({
+  const [searchCriteria, setSearchCriteria] = useState({
     city: '',
-    checkIn: null,
-    checkOut: null,
+    checkIn: null as Date | null,
+    checkOut: null as Date | null,
     guests: 1,
+    priceRange: [50, 500] as [number, number]
   });
 
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined,
-  });
-
-  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchCriteria({ ...searchCriteria, city: e.target.value });
-  };
-
-  const handleGuestsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const guests = parseInt(e.target.value);
-    if (guests > 0) {
-      setSearchCriteria({ ...searchCriteria, guests });
+  const handleChange = (field: string, value: any) => {
+    setSearchCriteria(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Save search criteria to localStorage for dynamic pricing
+    if (field === 'guests') {
+      localStorage.setItem('searchGuests', value.toString());
     }
   };
 
-  const handleDateSelect = (range: { from?: Date; to?: Date }) => {
-    setDateRange({
-      from: range.from,
-      to: range.to
-    });
-    setSearchCriteria({
-      ...searchCriteria,
-      checkIn: range.from || null,
-      checkOut: range.to || null,
-    });
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchCriteria.city) params.append('city', searchCriteria.city);
-    if (searchCriteria.checkIn) params.append('checkIn', searchCriteria.checkIn.toISOString());
-    if (searchCriteria.checkOut) params.append('checkOut', searchCriteria.checkOut.toISOString());
-    params.append('guests', searchCriteria.guests.toString());
-
-    navigate({
-      pathname: '/hotels',
-      search: params.toString(),
-    });
+    
+    // Save all search criteria to localStorage
+    localStorage.setItem('searchCriteria', JSON.stringify(searchCriteria));
+    
+    if (onSearch) {
+      onSearch(searchCriteria);
+    } else {
+      // If no onSearch prop, navigate to hotels page with query params
+      navigate(`/hotels?city=${searchCriteria.city}&guests=${searchCriteria.guests}&minPrice=${searchCriteria.priceRange[0]}&maxPrice=${searchCriteria.priceRange[1]}`);
+    }
   };
+
+  useEffect(() => {
+    // Restore search criteria from localStorage if available
+    const savedCriteria = localStorage.getItem('searchCriteria');
+    if (savedCriteria) {
+      try {
+        const parsed = JSON.parse(savedCriteria);
+        // Convert date strings back to Date objects
+        if (parsed.checkIn) parsed.checkIn = new Date(parsed.checkIn);
+        if (parsed.checkOut) parsed.checkOut = new Date(parsed.checkOut);
+        setSearchCriteria(parsed);
+      } catch (error) {
+        console.error("Error parsing saved search criteria:", error);
+      }
+    }
+  }, []);
 
   return (
-    <form onSubmit={handleSearch} className={cn("w-full", className)}>
-      <div className={cn(
-        "grid gap-4",
-        minimal ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
-      )}>
-        {/* Location */}
-        <div className="space-y-2">
-          <Label htmlFor="location" className={minimal ? "text-xs" : ""}>Location</Label>
+    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-4 w-full", className)}>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Destination */}
+        <div className="lg:col-span-2">
+          <Label htmlFor="city" className="mb-2 block">Destination</Label>
           <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="location"
+              id="city"
               placeholder="Where are you going?"
-              className="pl-10"
+              className="pl-9"
               value={searchCriteria.city}
-              onChange={handleCityChange}
-              required
+              onChange={(e) => handleChange('city', e.target.value)}
             />
           </div>
         </div>
-
-        {/* Date Range */}
-        <div className="space-y-2">
-          <Label className={minimal ? "text-xs" : ""}>Check-in & Check-out</Label>
+        
+        {/* Check-in Date */}
+        <div>
+          <Label className="mb-2 block">Check-in Date</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dateRange.from && "text-muted-foreground"
-                )}
+                className="w-full justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, "MMM d, yyyy")} -{" "}
-                      {format(dateRange.to, "MMM d, yyyy")}
-                    </>
-                  ) : (
-                    format(dateRange.from, "MMM d, yyyy")
-                  )
+                {searchCriteria.checkIn ? (
+                  format(searchCriteria.checkIn, "PPP")
                 ) : (
-                  "Select dates"
+                  <span>Select date</span>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0">
               <Calendar
+                mode="single"
+                selected={searchCriteria.checkIn || undefined}
+                onSelect={(date) => handleChange('checkIn', date)}
                 initialFocus
-                mode="range"
-                defaultMonth={dateRange.from}
-                selected={dateRange}
-                onSelect={handleDateSelect}
-                numberOfMonths={minimal ? 1 : 2}
-                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                className={cn("p-3 pointer-events-auto", minimal ? "rounded-md border" : "")}
+                className="p-3 pointer-events-auto"
+                disabled={(date) => date < new Date()}
               />
             </PopoverContent>
           </Popover>
         </div>
-
-        {/* Guests */}
-        <div className="space-y-2">
-          <Label htmlFor="guests" className={minimal ? "text-xs" : ""}>Guests</Label>
-          <div className="relative">
-            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="guests"
-              type="number"
-              min="1"
-              placeholder="Number of guests"
-              className="pl-10"
-              value={searchCriteria.guests}
-              onChange={handleGuestsChange}
-            />
-          </div>
+        
+        {/* Check-out Date */}
+        <div>
+          <Label className="mb-2 block">Check-out Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {searchCriteria.checkOut ? (
+                  format(searchCriteria.checkOut, "PPP")
+                ) : (
+                  <span>Select date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={searchCriteria.checkOut || undefined}
+                onSelect={(date) => handleChange('checkOut', date)}
+                initialFocus
+                className="p-3 pointer-events-auto"
+                disabled={(date) => !searchCriteria.checkIn || date <= searchCriteria.checkIn}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-
-        {/* Search Button */}
-        <div className={minimal ? "self-end" : "self-end md:self-end"}>
-          <Button 
-            type="submit" 
-            className="w-full bg-hotel-500 hover:bg-hotel-600 text-white"
-            size={minimal ? "default" : "lg"}
+        
+        {/* Guests */}
+        <div>
+          <Label htmlFor="guests" className="mb-2 block">Guests</Label>
+          <Select 
+            value={searchCriteria.guests.toString()} 
+            onValueChange={(value) => handleChange('guests', parseInt(value))}
           >
-            Search
-          </Button>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center">
+                <Users className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Guests" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                <SelectItem key={num} value={num.toString()}>
+                  {num} {num === 1 ? 'Guest' : 'Guests'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
+      
+      {/* Price Range */}
+      <div className="py-2">
+        <Label className="mb-2 block">Price Range: ${searchCriteria.priceRange[0]} - ${searchCriteria.priceRange[1]}</Label>
+        <Slider
+          value={searchCriteria.priceRange}
+          min={0}
+          max={1000}
+          step={10}
+          className="my-4"
+          onValueChange={(value) => handleChange('priceRange', value as [number, number])}
+        />
+      </div>
+      
+      {/* Search Button */}
+      <Button type="submit" className="bg-hotel-500 hover:bg-hotel-600">
+        <Search className="mr-2 h-4 w-4" />
+        Search
+      </Button>
     </form>
   );
 };

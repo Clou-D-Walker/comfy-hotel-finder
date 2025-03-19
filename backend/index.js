@@ -2,23 +2,24 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const morgan = require('morgan');
-const connectDB = require('./config/db');
-const errorHandler = require('./middleware/error');
+const path = require('path');
 
 // Load env vars
-dotenv.config();
+dotenv.config({ path: './.env' });
 
-// Connect to database
-connectDB();
-
-// Route files
+// Import routes
 const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
-const hotelRoutes = require('./routes/hotels');
-const roomRoutes = require('./routes/rooms');
-const bookingRoutes = require('./routes/bookings');
+const usersRoutes = require('./routes/users');
+const hotelsRoutes = require('./routes/hotels');
+const roomsRoutes = require('./routes/rooms');
+const bookingsRoutes = require('./routes/bookings');
+const workersRoutes = require('./routes/workers');
+const moderatorsRoutes = require('./routes/moderators');
+const adminsRoutes = require('./routes/admins');
 
+// Initialize express
 const app = express();
 
 // Body parser
@@ -32,29 +33,39 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Mount routers
+// Mount routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/hotels', hotelRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/bookings', bookingRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/hotels', hotelsRoutes);
+app.use('/api/rooms', roomsRoutes);
+app.use('/api/bookings', bookingsRoutes);
+app.use('/api/workers', workersRoutes);
+app.use('/api/moderators', moderatorsRoutes);
+app.use('/api/admins', adminsRoutes);
 
-// Health check endpoint
+// Health check route
 app.get('/api/health-check', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Server is running' });
+  res.status(200).json({ message: 'Server is running' });
 });
 
-// Error handler middleware
-app.use(errorHandler);
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log('MongoDB Connection Error:', err));
 
+// Port
 const PORT = process.env.PORT || 8000;
 
+// Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (err, promise) => {
   console.log(`Error: ${err.message}`);
   // Close server & exit process
   server.close(() => process.exit(1));

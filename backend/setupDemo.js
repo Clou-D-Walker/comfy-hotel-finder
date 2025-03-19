@@ -3,8 +3,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const User = require('./models/User');
+const Admin = require('./models/Admin');
+const Moderator = require('./models/Moderator');
+const Worker = require('./models/Worker');
 const Hotel = require('./models/Hotel');
 const Room = require('./models/Room');
+const Booking = require('./models/Booking');
 
 // Load env vars
 dotenv.config();
@@ -15,7 +19,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true,
 });
 
-// Demo users
+// Sample users
 const users = [
   {
     username: 'admin',
@@ -24,8 +28,6 @@ const users = [
     country: 'United States',
     city: 'New York',
     phone: '+1234567890',
-    isAdmin: true,
-    isModerator: false,
   },
   {
     username: 'moderator',
@@ -34,8 +36,14 @@ const users = [
     country: 'United Kingdom',
     city: 'London',
     phone: '+9876543210',
-    isAdmin: false,
-    isModerator: true,
+  },
+  {
+    username: 'worker',
+    email: 'worker@example.com',
+    password: 'password123',
+    country: 'Canada',
+    city: 'Toronto',
+    phone: '+1122334455',
   },
   {
     username: 'user',
@@ -44,12 +52,18 @@ const users = [
     country: 'Canada',
     city: 'Toronto',
     phone: '+1122334455',
-    isAdmin: false,
-    isModerator: false,
+  },
+  {
+    username: 'moderator2',
+    email: 'mod2@example.com',
+    password: 'password123',
+    country: 'France',
+    city: 'Paris',
+    phone: '+3344556677',
   },
 ];
 
-// Demo hotels
+// Sample hotels
 const hotels = [
   {
     name: 'Grand Plaza Hotel',
@@ -64,7 +78,6 @@ const hotels = [
     title: 'Experience luxury in the heart of Manhattan',
     desc: 'The Grand Plaza Hotel offers luxurious accommodations with stunning views of the New York skyline. Located in the heart of Manhattan, guests are just steps away from famous attractions, shopping, and dining.',
     rating: 4.8,
-    rooms: [],
     cheapestPrice: 299,
     featured: true,
   },
@@ -81,7 +94,6 @@ const hotels = [
     title: 'Beachfront paradise with world-class amenities',
     desc: 'Escape to our beachfront resort featuring pristine beaches, multiple pools, and a full-service spa. Enjoy spacious rooms with private balconies overlooking the ocean.',
     rating: 4.6,
-    rooms: [],
     cheapestPrice: 399,
     featured: true,
   },
@@ -98,7 +110,6 @@ const hotels = [
     title: 'Modern loft living in downtown San Francisco',
     desc: 'These stylish loft apartments offer modern amenities and convenience in the heart of San Francisco. Each unit features a fully equipped kitchen, high ceilings, and contemporary furnishings.',
     rating: 4.3,
-    rooms: [],
     cheapestPrice: 249,
     featured: false,
   },
@@ -115,16 +126,16 @@ const hotels = [
     title: 'Cozy cabins with breathtaking mountain views',
     desc: 'Our rustic cabins offer a perfect mountain retreat with stunning views, wood-burning fireplaces, and access to hiking trails. Ideal for nature lovers and outdoor enthusiasts.',
     rating: 4.7,
-    rooms: [],
     cheapestPrice: 329,
     featured: true,
   },
 ];
 
-// Demo rooms types
-const createRoomsForHotel = (hotelId) => [
+// Sample room templates
+const createRooms = (hotelId) => [
   {
     title: 'Deluxe King Room',
+    hotelId,
     price: 299,
     maxPeople: 2,
     desc: 'Spacious room with a king-sized bed, luxury linens, and a marble bathroom with a deep soaking tub.',
@@ -136,6 +147,7 @@ const createRoomsForHotel = (hotelId) => [
   },
   {
     title: 'Double Queen Suite',
+    hotelId,
     price: 349,
     maxPeople: 4,
     desc: 'Perfect for families, this suite features two queen beds, a separate living area, and views of the city.',
@@ -146,6 +158,7 @@ const createRoomsForHotel = (hotelId) => [
   },
   {
     title: 'Executive Suite',
+    hotelId,
     price: 499,
     maxPeople: 2,
     desc: 'Our most luxurious accommodation with a king bed, separate living room, kitchenette, and premium amenities.',
@@ -155,13 +168,39 @@ const createRoomsForHotel = (hotelId) => [
   },
 ];
 
+// Sample worker templates
+const createWorkers = (userId, hotelId) => [
+  {
+    name: 'John Cleaner',
+    userId,
+    hotelId,
+    role: 'Housekeeper',
+    email: 'cleaner@example.com',
+    phone: '+1122334455',
+    isActive: true,
+  },
+  {
+    name: 'Sarah Receptionist',
+    userId,
+    hotelId,
+    role: 'Receptionist',
+    email: 'receptionist@example.com',
+    phone: '+2233445566',
+    isActive: true,
+  },
+];
+
 // Seed the database
 const seedDatabase = async () => {
   try {
     // Clear existing data
     await User.deleteMany();
+    await Admin.deleteMany();
+    await Moderator.deleteMany();
+    await Worker.deleteMany();
     await Hotel.deleteMany();
     await Room.deleteMany();
+    await Booking.deleteMany();
 
     console.log('Database cleared');
 
@@ -181,25 +220,137 @@ const seedDatabase = async () => {
     
     console.log('Demo users created');
 
-    // Create hotels and rooms
+    // Create admin (first user)
+    const admin = await Admin.create({
+      userId: createdUsers[0]._id,
+      superAdmin: true,
+      permissions: {
+        manageUsers: true,
+        manageHotels: true,
+        manageModerators: true,
+        viewReports: true
+      }
+    });
+    
+    console.log('Admin created');
+
+    // Create hotels
+    const createdHotels = [];
     for (const hotel of hotels) {
       const newHotel = await Hotel.create(hotel);
-      
-      // Create rooms for this hotel
-      const roomTemplates = createRoomsForHotel(newHotel._id);
+      createdHotels.push(newHotel);
+    }
+    
+    console.log('Hotels created');
+    
+    // Create moderators (assign second user to first two hotels)
+    const moderator1 = await Moderator.create({
+      userId: createdUsers[1]._id,
+      assignedHotels: [createdHotels[0]._id, createdHotels[1]._id],
+      isActive: true,
+      permissions: {
+        canManageWorkers: true,
+        canManageRooms: true,
+        canViewBookings: true
+      }
+    });
+    
+    // Create second moderator (assign fifth user to second two hotels)
+    const moderator2 = await Moderator.create({
+      userId: createdUsers[4]._id,
+      assignedHotels: [createdHotels[2]._id, createdHotels[3]._id],
+      isActive: true,
+      permissions: {
+        canManageWorkers: true,
+        canManageRooms: true,
+        canViewBookings: true
+      }
+    });
+    
+    console.log('Moderators created');
+
+    // Create rooms for each hotel
+    const createdRooms = [];
+    for (const hotel of createdHotels) {
+      const roomTemplates = createRooms(hotel._id);
       
       for (const roomTemplate of roomTemplates) {
         const newRoom = await Room.create(roomTemplate);
-        
-        // Add room to hotel
-        await Hotel.findByIdAndUpdate(
-          newHotel._id,
-          { $push: { rooms: newRoom._id } }
-        );
+        createdRooms.push(newRoom);
       }
     }
     
-    console.log('Demo hotels and rooms created');
+    console.log('Rooms created');
+    
+    // Create workers (assign third user as a worker for first hotel)
+    const workerTemplates = createWorkers(createdUsers[2]._id, createdHotels[0]._id);
+    
+    const createdWorkers = [];
+    for (const workerTemplate of workerTemplates) {
+      const newWorker = await Worker.create(workerTemplate);
+      createdWorkers.push(newWorker);
+    }
+    
+    console.log('Workers created');
+    
+    // Create sample bookings
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    const twoWeeks = new Date(now);
+    twoWeeks.setDate(twoWeeks.getDate() + 14);
+    
+    // Create a booking for the regular user
+    const booking1 = await Booking.create({
+      userId: createdUsers[3]._id, // Regular user
+      hotelId: createdHotels[0]._id,
+      roomId: createdRooms[0]._id,
+      roomNumber: 101,
+      dateStart: tomorrow,
+      dateEnd: nextWeek,
+      totalPrice: 299 * 7, // 7 days at base price
+      status: 'confirmed',
+      guestCount: 2
+    });
+    
+    // Create another booking for the regular user
+    const booking2 = await Booking.create({
+      userId: createdUsers[3]._id, // Regular user
+      hotelId: createdHotels[1]._id,
+      roomId: createdRooms[3]._id, // Room from second hotel
+      roomNumber: 201,
+      dateStart: nextWeek,
+      dateEnd: twoWeeks,
+      totalPrice: 349 * 7, // 7 days at base price
+      status: 'active',
+      guestCount: 3
+    });
+    
+    console.log('Bookings created');
+    
+    // Assign a room to a worker for cleaning
+    const worker = createdWorkers[0]; // First worker
+    worker.assignedRooms.push({
+      roomId: createdRooms[1]._id, // Assign second room
+      assignedBy: moderator1._id,
+      assignedAt: new Date(),
+      status: 'pending'
+    });
+    
+    await worker.save();
+    
+    // Mark the room as needing cleaning
+    const room = await Room.findById(createdRooms[1]._id);
+    room.needsCleaning = true;
+    room.isCleaned = false;
+    await room.save();
+    
+    console.log('Worker assigned to room for cleaning');
+    
     console.log('Database seeded successfully!');
     
     process.exit(0);

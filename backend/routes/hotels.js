@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const Hotel = require('../models/Hotel');
@@ -10,7 +9,18 @@ const { protect } = require('../middleware/auth');
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const hotels = await Hotel.find();
+    const { minPrice, maxPrice } = req.query;
+    
+    let query = {};
+    
+    // Add price filter if provided
+    if (minPrice || maxPrice) {
+      query.cheapestPrice = {};
+      if (minPrice) query.cheapestPrice.$gte = parseInt(minPrice);
+      if (maxPrice) query.cheapestPrice.$lte = parseInt(maxPrice);
+    }
+    
+    const hotels = await Hotel.find(query);
     res.status(200).json(hotels);
   } catch (err) {
     res.status(400).json({
@@ -63,12 +73,19 @@ router.get('/:id', async (req, res) => {
 // @access  Public
 router.post('/search', async (req, res) => {
   try {
-    const { city, checkIn, checkOut, guests } = req.body;
+    const { city, checkIn, checkOut, guests, minPrice, maxPrice } = req.body;
     
     const query = {};
     
     if (city) {
       query.city = { $regex: city, $options: 'i' };
+    }
+    
+    // Add price filter
+    if (minPrice || maxPrice) {
+      query.cheapestPrice = {};
+      if (minPrice) query.cheapestPrice.$gte = parseInt(minPrice);
+      if (maxPrice) query.cheapestPrice.$lte = parseInt(maxPrice);
     }
     
     const hotels = await Hotel.find(query);
@@ -88,7 +105,7 @@ router.post('/search', async (req, res) => {
         
         // Check if any room can accommodate the guests
         const hasValidRoom = hotelRooms.some(room => {
-          return room.maxPeople >= guests;
+          return room.maxPeople >= guests || (room.maxPeople * 2 >= guests); // Allow double occupancy with double price
         });
         
         if (hasValidRoom) {
@@ -96,7 +113,7 @@ router.post('/search', async (req, res) => {
           let hasAvailableRoom = false;
           
           for (const room of hotelRooms) {
-            if (room.maxPeople < guests) continue;
+            if (room.maxPeople < guests && room.maxPeople * 2 < guests) continue;
             
             let isAvailable = true;
             

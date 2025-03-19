@@ -40,14 +40,6 @@ const UserSchema = new mongoose.Schema({
   img: {
     type: String,
     default: ''
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false
-  },
-  isModerator: {
-    type: Boolean,
-    default: false
   }
 }, {
   timestamps: true
