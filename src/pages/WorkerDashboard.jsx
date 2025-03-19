@@ -34,6 +34,7 @@ const WorkerDashboard = () => {
   const [workerProfile, setWorkerProfile] = useState(null);
   const [pendingRooms, setPendingRooms] = useState([]);
   const [completedRooms, setCompletedRooms] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
   
   // Load worker data
   useEffect(() => {
@@ -153,7 +154,7 @@ const WorkerDashboard = () => {
                 </Card>
                 
                 {/* Tasks tabs */}
-                <Tabs defaultValue="pending" className="w-full">
+                <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="mb-6">
                     <TabsTrigger value="pending" className="flex items-center">
                       <Clock className="h-4 w-4 mr-2" />
