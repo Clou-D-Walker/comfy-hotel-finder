@@ -1,7 +1,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, ShieldCheck, Shield } from 'lucide-react';
+import { User, LogOut, ShieldCheck, Shield, Briefcase } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface AuthLinksProps {
@@ -36,6 +36,15 @@ const AuthLinks = ({ isAuthenticated, logout }: AuthLinksProps) => {
             <Button variant="outline" size="sm" className="btn-transition hover:text-hotel-500">
               <Shield className="h-4 w-4 mr-2" />
               Moderator
+            </Button>
+          </Link>
+        )}
+        
+        {user?.isWorker && !user?.isModerator && !user?.isAdmin && (
+          <Link to="/worker">
+            <Button variant="outline" size="sm" className="btn-transition hover:text-hotel-500">
+              <Briefcase className="h-4 w-4 mr-2" />
+              Worker
             </Button>
           </Link>
         )}

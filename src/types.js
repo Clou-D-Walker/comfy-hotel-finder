@@ -54,9 +54,51 @@
  * @property {boolean} isWorker - Whether user is a worker
  */
 
+/**
+ * Admin object type
+ * @typedef {Object} Admin
+ * @property {string} _id - Admin unique identifier
+ * @property {string} userId - Reference to the User
+ * @property {boolean} superAdmin - Whether admin is a super admin
+ * @property {Object} permissions - Admin permissions
+ */
+
+/**
+ * Moderator object type
+ * @typedef {Object} Moderator
+ * @property {string} _id - Moderator unique identifier
+ * @property {string} userId - Reference to the User
+ * @property {Array<string>} assignedHotels - List of hotel IDs assigned to the moderator
+ * @property {Object} permissions - Moderator permissions
+ */
+
+/**
+ * Worker object type
+ * @typedef {Object} Worker
+ * @property {string} _id - Worker unique identifier
+ * @property {string} userId - Reference to the User
+ * @property {string} hotelId - Reference to the Hotel
+ * @property {string} role - Worker role
+ * @property {Array<Object>} assignedRooms - List of rooms assigned for cleaning
+ */
+
+/**
+ * Search criteria type
+ * @typedef {Object} SearchCriteria
+ * @property {string} city - City to search in
+ * @property {Date} checkIn - Check-in date
+ * @property {Date} checkOut - Check-out date
+ * @property {number} guests - Number of guests
+ * @property {number[]} priceRange - Min and max price range
+ */
+
 // Export empty objects to allow importing these types
 // The actual type checking happens at runtime
 export const Hotel = {};
 export const Room = {};
 export const Booking = {};
 export const User = {};
+export const Admin = {};
+export const Moderator = {};
+export const Worker = {};
+export const SearchCriteria = {};

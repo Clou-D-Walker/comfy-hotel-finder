@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { authAPI, checkBackendConnection } from '@/services/api';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 // Define action types
 const initialState = {
@@ -80,10 +80,12 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'BACKEND_STATUS', payload: isConnected });
       
       if (!isConnected) {
-        toast.error(
-          'Cannot connect to the backend server. Please ensure it is running at http://localhost:8000',
-          { duration: 6000 }
-        );
+        toast({
+          title: "Connection Error",
+          description: "Cannot connect to the backend server. Please ensure it is running at http://localhost:8000",
+          variant: "destructive",
+          duration: 6000
+        });
       }
     };
     
@@ -121,7 +123,11 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     if (!state.backendAvailable) {
-      toast.error('Cannot connect to the backend server. Please ensure it is running.');
+      toast({
+        title: "Connection Error",
+        description: "Cannot connect to the backend server. Please ensure it is running.",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -129,20 +135,31 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authAPI.login(email, password);
       dispatch({ type: 'LOGIN_SUCCESS', payload: data.user });
-      toast.success('Logged in successfully');
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      });
     } catch (error) {
       dispatch({ 
         type: 'LOGIN_FAILURE', 
         payload: error.message || 'Failed to login' 
       });
-      toast.error(error.message || 'Failed to login');
+      toast({
+        title: "Login Failed",
+        description: error.message || 'Failed to login',
+        variant: "destructive"
+      });
     }
   };
 
   // Register function
   const register = async (userData) => {
     if (!state.backendAvailable) {
-      toast.error('Cannot connect to the backend server. Please ensure it is running at http://localhost:8000');
+      toast({
+        title: "Connection Error",
+        description: "Cannot connect to the backend server. Please ensure it is running at http://localhost:8000",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -150,13 +167,20 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authAPI.register(userData);
       dispatch({ type: 'REGISTER_SUCCESS', payload: data.user });
-      toast.success('Registered successfully');
+      toast({
+        title: "Success",
+        description: "Registered successfully",
+      });
     } catch (error) {
       dispatch({ 
         type: 'REGISTER_FAILURE', 
         payload: error.message || 'Failed to register' 
       });
-      toast.error(error.message || 'Failed to register');
+      toast({
+        title: "Registration Failed",
+        description: error.message || 'Failed to register',
+        variant: "destructive"
+      });
     }
   };
 
@@ -164,7 +188,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     authAPI.logout();
     dispatch({ type: 'LOGOUT' });
-    toast.success('Logged out successfully');
+    toast({
+      title: "Success",
+      description: "Logged out successfully",
+    });
     // Redirect is handled by the authAPI.logout() function
   };
 

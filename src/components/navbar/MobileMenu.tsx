@@ -1,7 +1,8 @@
 
 import { Link } from 'react-router-dom';
-import { Home, Search, Calendar, Settings, User, LogOut } from 'lucide-react';
+import { Home, Search, Calendar, Settings, User, LogOut, Shield, ShieldCheck, Briefcase } from 'lucide-react';
 import NavLink from './NavLink';
+import { useAuth } from '@/context/AuthContext';
 
 interface MobileMenuProps {
   isAuthenticated: boolean;
@@ -9,6 +10,9 @@ interface MobileMenuProps {
 }
 
 const MobileMenu = ({ isAuthenticated, logout }: MobileMenuProps) => {
+  const { state } = useAuth();
+  const { user } = state;
+  
   return (
     <div className="md:hidden bg-white/80 backdrop-blur-md">
       <div className="container py-4 flex flex-col space-y-4 animate-fade-in-down">
@@ -35,6 +39,37 @@ const MobileMenu = ({ isAuthenticated, logout }: MobileMenuProps) => {
                 <User className="h-4 w-4 mr-3 text-hotel-500" />
                 <span>Dashboard</span>
               </Link>
+              
+              {user?.isAdmin && (
+                <Link
+                  to="/admin"
+                  className="flex items-center p-2 rounded-md hover:bg-hotel-50"
+                >
+                  <ShieldCheck className="h-4 w-4 mr-3 text-hotel-500" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              )}
+              
+              {user?.isModerator && (
+                <Link
+                  to="/moderator"
+                  className="flex items-center p-2 rounded-md hover:bg-hotel-50"
+                >
+                  <Shield className="h-4 w-4 mr-3 text-hotel-500" />
+                  <span>Moderator Dashboard</span>
+                </Link>
+              )}
+              
+              {user?.isWorker && (
+                <Link
+                  to="/worker"
+                  className="flex items-center p-2 rounded-md hover:bg-hotel-50"
+                >
+                  <Briefcase className="h-4 w-4 mr-3 text-hotel-500" />
+                  <span>Worker Dashboard</span>
+                </Link>
+              )}
+              
               <button
                 onClick={logout}
                 className="w-full flex items-center p-2 rounded-md hover:bg-hotel-50 text-left"

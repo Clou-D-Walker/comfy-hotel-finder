@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 const AuthGuard = ({ 
   children, 
@@ -16,13 +16,29 @@ const AuthGuard = ({
 
   useEffect(() => {
     if (!isAuthenticated) {
-      toast.error("You must be logged in to access this page");
+      toast({
+        title: "Access Denied",
+        description: "You must be logged in to access this page",
+        variant: "destructive"
+      });
     } else if (requireAdmin && !user?.isAdmin) {
-      toast.error("You don't have admin privileges to access this page");
+      toast({
+        title: "Access Denied",
+        description: "You don't have admin privileges to access this page",
+        variant: "destructive"
+      });
     } else if (requireModerator && !user?.isModerator && !user?.isAdmin) {
-      toast.error("You don't have moderator privileges to access this page");
+      toast({
+        title: "Access Denied",
+        description: "You don't have moderator privileges to access this page",
+        variant: "destructive"
+      });
     } else if (requireWorker && !user?.isWorker && !user?.isModerator && !user?.isAdmin) {
-      toast.error("You don't have worker privileges to access this page");
+      toast({
+        title: "Access Denied",
+        description: "You don't have worker privileges to access this page",
+        variant: "destructive"
+      });
     }
   }, [isAuthenticated, requireAdmin, requireModerator, requireWorker, user]);
 
